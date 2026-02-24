@@ -1,0 +1,12 @@
+Django==6.0.2
+djangorestframework>=3.14
+django-cors-headers>=4.3
+django-filter>=23.5
+djangorestframework-simplejwt>=5.3
+# Raw ES client only - does NOT connect until explicitly called.
+# django-elasticsearch-dsl is intentionally excluded: it pings ES at
+# Django startup and crashes when Elasticsearch is not running.
+elasticsearch>=8.0,<9.0
+Pillow>=10.0
+python-dotenv>=1.0
+gunicorn>=21.2

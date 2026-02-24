@@ -1,0 +1,239 @@
+# ═══════════════════════════════════════════════════════════
+#  StayFinder — Airbnb Clone
+#  .gitignore for Django (backend) + React/Vite (frontend)
+# ═══════════════════════════════════════════════════════════
+
+
+# ───────────────────────────────────────────────────────────
+#  PYTHON / DJANGO
+# ───────────────────────────────────────────────────────────
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+ENV/
+env.bak/
+venv.bak/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+static_collected/
+
+# Environment variables
+.env
+.env.local
+.env.production
+.env.staging
+*.env
+
+# Django migrations (optional — uncomment if you want to exclude them)
+# */migrations/0*.py
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Coverage
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+
+# pytest
+.pytest_cache/
+pytest.ini
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+MANIFEST
+.eggs/
+wheels/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+
+# ───────────────────────────────────────────────────────────
+#  NODE / REACT / VITE
+# ───────────────────────────────────────────────────────────
+
+# Dependencies
+node_modules/
+.npm
+.yarn/
+.pnp
+.pnp.js
+
+# Build output
+frontend/dist/
+frontend/build/
+frontend/.vite/
+
+# Vite cache
+frontend/.vite-cache/
+
+# Environment files (frontend)
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Testing
+coverage/
+*.lcov
+.nyc_output/
+
+
+# ───────────────────────────────────────────────────────────
+#  ELASTICSEARCH
+# ───────────────────────────────────────────────────────────
+
+# Local ES data directory (if running ES locally)
+elasticsearch-data/
+*.index/
+
+
+# ───────────────────────────────────────────────────────────
+#  EDITORS & IDEs
+# ───────────────────────────────────────────────────────────
+
+# VS Code
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json.example
+
+# JetBrains (PyCharm, WebStorm, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Vim / Neovim
+*.swp
+*.swo
+*~
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+
+# ───────────────────────────────────────────────────────────
+#  SECRETS & CREDENTIALS
+# ───────────────────────────────────────────────────────────
+
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+secrets.json
+secrets.yaml
+secrets.yml
+service-account*.json
+
+
+# ───────────────────────────────────────────────────────────
+#  DOCKER
+# ───────────────────────────────────────────────────────────
+
+# Keep Dockerfiles but ignore local overrides
+docker-compose.override.yml
+.docker/
+
+
+# ───────────────────────────────────────────────────────────
+#  MISC
+# ───────────────────────────────────────────────────────────
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
+
+# Archives (don't commit zip exports)
+*.zip
+*.tar.gz
+*.rar
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Terraform (if used for infra)
+.terraform/
+*.tfstate
+*.tfstate.backup
