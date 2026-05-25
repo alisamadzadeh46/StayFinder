@@ -120,3 +120,17 @@ def add_listing_image(request, pk):
     order = listing.images.count()
     image = ListingImage.objects.create(listing=listing, url=url, is_primary=is_primary, order=order)
     return Response({'id': image.id, 'url': image.url}, status=201)
+
+
+# ─── Slug-based detail view (for SEO URLs) ───────────────────────────────────
+
+class ListingDetailBySlugView(generics.RetrieveUpdateDestroyAPIView):
+    """Same as ListingDetailView but looks up by slug instead of pk."""
+    queryset = Listing.objects.all().prefetch_related('images', 'reviews')
+    permission_classes = [IsHostOrReadOnly]
+    lookup_field = 'slug'
+
+    def get_serializer_class(self):
+        if self.request.method in ('PUT', 'PATCH'):
+            return ListingCreateSerializer
+        return ListingSerializer

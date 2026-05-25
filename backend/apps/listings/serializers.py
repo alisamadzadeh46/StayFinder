@@ -16,11 +16,13 @@ class ListingSerializer(serializers.ModelSerializer):
     host_name = serializers.SerializerMethodField()
     host_avatar = serializers.SerializerMethodField()
     host_is_superhost = serializers.SerializerMethodField()
+    seo_title = serializers.SerializerMethodField()
+    seo_description = serializers.SerializerMethodField()
 
     class Meta:
         model = Listing
         fields = [
-            'id', 'host', 'host_name', 'host_avatar', 'host_is_superhost',
+            'id', 'slug', 'host', 'host_name', 'host_avatar', 'host_is_superhost',
             'title', 'description', 'property_type',
             'price_per_night', 'address', 'city', 'state', 'country',
             'latitude', 'longitude',
@@ -30,8 +32,9 @@ class ListingSerializer(serializers.ModelSerializer):
             'has_fireplace', 'has_bbq', 'has_ev_charger',
             'is_active', 'images', 'primary_image',
             'average_rating', 'review_count', 'created_at',
+            'seo_title', 'seo_description',
         ]
-        read_only_fields = ['id', 'host', 'created_at']
+        read_only_fields = ['id', 'slug', 'host', 'created_at']
 
     def get_host_name(self, obj):
         return f"{obj.host.first_name} {obj.host.last_name}".strip() or obj.host.username
@@ -40,9 +43,13 @@ class ListingSerializer(serializers.ModelSerializer):
         return obj.host.avatar
 
     def get_host_is_superhost(self, obj):
-        # Superhost = host with 3+ listings and avg rating ≥ 4.8
-        count = obj.host.listings.count()
-        return count >= 3
+        return obj.host.listings.count() >= 3
+
+    def get_seo_title(self, obj):
+        return obj.get_seo_title()
+
+    def get_seo_description(self, obj):
+        return obj.get_seo_description()
 
 
 class ListingCreateSerializer(serializers.ModelSerializer):
@@ -52,7 +59,7 @@ class ListingCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Listing
-        exclude = ['host', 'created_at', 'updated_at']
+        exclude = ['host', 'slug', 'created_at', 'updated_at']
 
     def create(self, validated_data):
         images = validated_data.pop('images', [])

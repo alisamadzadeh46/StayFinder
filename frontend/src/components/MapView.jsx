@@ -1,52 +1,68 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
-export default function MapView({ lat, lng, title, zoom = 13, height = 340, markers = [] }) {
+export default function MapView({ listing, nearby = [] }) {
   const mapRef = useRef(null);
   const instanceRef = useRef(null);
-  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // Dynamically import leaflet
-    import('leaflet').then(L => {
-      if (instanceRef.current) return;
+    // Guard: container must exist and not already initialized
+    if (!mapRef.current || instanceRef.current) return;
+    if (!listing?.latitude || !listing?.longitude) return;
 
-      const map = L.map(mapRef.current, {
-        center: [lat, lng],
-        zoom,
-        zoomControl: true,
-        scrollWheelZoom: false,
-      });
+    let map = null;
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 19,
-      }).addTo(map);
+    const init = async () => {
+      try {
+        const L = (await import('leaflet')).default;
+        await import('leaflet/dist/leaflet.css');
 
-      // Custom icon
-      const icon = L.divIcon({
-        className: '',
-        html: `<div style="background:var(--primary,#E8472A);color:white;padding:5px 12px;border-radius:20px;font-weight:700;font-size:13px;font-family:DM Sans,sans-serif;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.25);border:2px solid white">${title || '📍'}</div>`,
-        iconAnchor: [50, 20],
-      });
+        // Double-check container still exists
+        if (!mapRef.current) return;
 
-      L.marker([lat, lng], { icon }).addTo(map);
-
-      // Extra markers (nearby)
-      if (markers.length > 0) {
-        markers.forEach(m => {
-          if (!m.lat || !m.lng) return;
-          const mi = L.divIcon({
-            className: '',
-            html: `<div style="background:white;color:var(--text,#1a1a1a);padding:4px 10px;border-radius:20px;font-weight:600;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,.18);border:1.5px solid #e8e8e8;cursor:pointer">$${m.price}</div>`,
-            iconAnchor: [30, 14],
-          });
-          L.marker([m.lat, m.lng], { icon: mi }).addTo(map).bindPopup(`<strong>${m.title}</strong>`);
+        map = L.map(mapRef.current, {
+          center: [parseFloat(listing.latitude), parseFloat(listing.longitude)],
+          zoom: 14,
+          zoomControl: true,
+          scrollWheelZoom: false,
         });
-      }
 
-      instanceRef.current = map;
-      setReady(true);
-    });
+        instanceRef.current = map;
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors',
+        }).addTo(map);
+
+        // Main listing marker
+        const icon = L.divIcon({
+          html: `<div style="background:#E8472A;color:white;padding:4px 10px;border-radius:20px;font-weight:700;font-size:13px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.3);">$${listing.price_per_night}</div>`,
+          className: '',
+          iconAnchor: [30, 15],
+        });
+        L.marker([parseFloat(listing.latitude), parseFloat(listing.longitude)], { icon })
+          .addTo(map)
+          .bindPopup(listing.title);
+
+        // Nearby markers
+        nearby.forEach(n => {
+          if (!n.latitude || !n.longitude || n.id === listing.id) return;
+          const ni = L.divIcon({
+            html: `<div style="background:white;color:#333;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid #ddd;box-shadow:0 1px 4px rgba(0,0,0,.15);">$${n.price_per_night}</div>`,
+            className: '',
+            iconAnchor: [20, 12],
+          });
+          L.marker([parseFloat(n.latitude), parseFloat(n.longitude)], { icon: ni })
+            .addTo(map)
+            .bindPopup(n.title);
+        });
+
+        // Fix map size after render
+        setTimeout(() => map?.invalidateSize(), 300);
+      } catch (e) {
+        console.warn('Map init error:', e.message);
+      }
+    };
+
+    init();
 
     return () => {
       if (instanceRef.current) {
@@ -54,16 +70,20 @@ export default function MapView({ lat, lng, title, zoom = 13, height = 340, mark
         instanceRef.current = null;
       }
     };
-  }, [lat, lng, title]);
+  }, [listing?.id]);
+
+  if (!listing?.latitude || !listing?.longitude) {
+    return (
+      <div style={{ height: 320, background: '#f5f5f5', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa' }}>
+        <p>Location not available</p>
+      </div>
+    );
+  }
 
   return (
-    <div style={{ borderRadius: 'var(--radius)', overflow: 'hidden', position: 'relative' }}>
-      <div ref={mapRef} style={{ height, width: '100%', borderRadius: 'var(--radius)' }} />
-      {!ready && (
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0f0f0', borderRadius: 'var(--radius)' }}>
-          <span style={{ color: 'var(--text-light)', fontSize: 14 }}>Loading map…</span>
-        </div>
-      )}
-    </div>
+    <div
+      ref={mapRef}
+      style={{ height: 320, borderRadius: 12, overflow: 'hidden', border: '1px solid #e8e8e8' }}
+    />
   );
 }

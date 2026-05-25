@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { apiFetch, formatPrice, formatDate } from '../utils/api';
+import { useSEO, PAGE_SEO } from '../hooks/useSEO';
 import { useAuth } from '../hooks/useAuth';
 import { Icon, Badge, StarRating, Spinner, useToast } from '../components/UI';
 
@@ -22,6 +23,7 @@ const STATUS_COLOR = { pending: 'amber', confirmed: 'green', cancelled: 'red', c
 export default function HostDashboard() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  useSEO(PAGE_SEO.dashboard);
   const { show, ToastEl } = useToast();
 
   const [tab, setTab] = useState('overview');

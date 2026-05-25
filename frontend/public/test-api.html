@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head><title>API Test</title></head>
+<body style="font-family:monospace;padding:20px">
+<h2>API Connection Test</h2>
+<pre id="out">Testing...</pre>
+<script>
+async function test() {
+  const out = document.getElementById('out');
+  const results = [];
+  const tests = ['/api/listings/', '/api/search/', '/api/search/?page=1'];
+  for (const url of tests) {
+    try {
+      const res = await fetch(url);
+      let body = '';
+      try {
+        const json = await res.json();
+        body = `count=${json.count ?? json.results?.length ?? '?'} engine=${json.engine ?? 'n/a'}`;
+      } catch(e) { body = 'non-json'; }
+      results.push(`${res.ok?'✅':'❌'} ${res.status} ${url}\n   → ${body}`);
+    } catch(e) {
+      results.push(`❌ NETWORK ERROR ${url}\n   → ${e.message}`);
+    }
+  }
+  out.textContent = results.join('\n\n');
+}
+test();
+</script>
+</body>
+</html>

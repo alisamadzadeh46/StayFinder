@@ -29,16 +29,21 @@ const paths = {
   location: "M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z",
   arrowLeft: "M10 19l-7-7m0 0l7-7m-7 7h18",
   arrowRight: "M14 5l7 7m0 0l-7 7m7-7H3",
+  chat: "M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z",
   share: "M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z",
 };
 
-export const Icon = ({ name, size = 20, className = '', style = {} }) => (
-  <svg width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.8"
-    strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"
-    className={className} style={style}>
-    <path d={paths[name]} />
-  </svg>
-);
+export const Icon = ({ name, size = 20, className = '', style = {} }) => {
+  const d = paths[name];
+  if (!d) return <svg width={size} height={size} viewBox="0 0 24 24" className={className} style={style} />;
+  return (
+    <svg width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.8"
+      strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"
+      className={className} style={style}>
+      <path d={d} />
+    </svg>
+  );
+};
 
 export const StarRating = ({ rating, count, size = 14 }) => (
   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: size }}>

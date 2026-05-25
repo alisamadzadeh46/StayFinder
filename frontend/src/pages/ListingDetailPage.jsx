@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSEO, buildListingSEO } from '../hooks/useSEO';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiFetch, formatPrice, formatDate } from '../utils/api';
 import { useAuth } from '../hooks/useAuth';
@@ -21,7 +22,7 @@ const AMENITY_LIST = [
 ];
 
 export default function ListingDetailPage() {
-  const { id } = useParams();
+  const { slug } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { show, ToastEl } = useToast();
@@ -44,25 +45,33 @@ export default function ListingDetailPage() {
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
   const [reviewLoading, setReviewLoading] = useState(false);
 
+  // SEO — called at top level, updates when listing changes
+  useSEO(buildListingSEO(listing));
+
   useEffect(() => {
     setLoading(true);
-    Promise.all([
-      apiFetch(`/listings/${id}/`),
-      apiFetch(`/reviews/listings/${id}/reviews/`),
-    ]).then(([l, r]) => {
-      setListing(l);
-      setReviews(r.results || r);
-      setLoading(false);
-    }).catch(() => { setLoading(false); navigate('/'); });
-  }, [id]);
+    // Fetch listing first — if this fails, go home
+    apiFetch(`/listings/${slug}/`)
+      .then(l => {
+        setListing(l);
+        setLoading(false);
+        // Fetch reviews separately — failure is non-fatal
+        apiFetch(`/reviews/listings/${l.id}/reviews/`)
+          .then(r => setReviews(r.results || r))
+          .catch(() => setReviews([]));
+      })
+      .catch(() => { setLoading(false); navigate('/'); });
+  }, [slug]);
+
+  // SEO is called at top level below (not inside useEffect)
 
   useEffect(() => {
     if (user) {
       apiFetch('/wishlists/saved/ids/')
-        .then(ids => setIsSaved(ids.includes(Number(id))))
+        .then(ids => setIsSaved(ids.includes(listing?.id)))
         .catch(() => {});
     }
-  }, [user, id]);
+  }, [user, listing?.id]);
 
   if (loading) return (
     <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -73,7 +82,7 @@ export default function ListingDetailPage() {
 
   const images = listing.images?.length
     ? listing.images
-    : [{ url: `https://picsum.photos/seed/${id}/1200/800` }];
+    : [{ url: `https://picsum.photos/seed/${listing.id}/1200/800` }];
 
   const nights = checkIn && checkOut
     ? Math.max(0, Math.round((new Date(checkOut) - new Date(checkIn)) / 86400000))
@@ -87,7 +96,7 @@ export default function ListingDetailPage() {
 
   const handleSave = async () => {
     if (!user) { show('Log in to save listings', 'info'); return; }
-    const r = await apiFetch(`/wishlists/toggle/${id}/`, { method: 'POST' });
+    const r = await apiFetch(`/wishlists/toggle/${listing.id}/`, { method: 'POST' });
     setIsSaved(r.saved);
     show(r.saved ? 'Saved to wishlist ❤️' : 'Removed from wishlist');
   };
@@ -114,8 +123,8 @@ export default function ListingDetailPage() {
     if (!user) { show('Log in to leave a review', 'info'); return; }
     setReviewLoading(true);
     try {
-      const r = await apiFetch(`/reviews/listings/${id}/reviews/`, {
-        method: 'POST', body: JSON.stringify({ listing: Number(id), ...reviewForm }),
+      const r = await apiFetch(`/reviews/listings/${listing.id}/reviews/`, {
+        method: 'POST', body: JSON.stringify({ listing: listing.id, ...reviewForm }),
       });
       setReviews(prev => [r, ...prev]);
       setReviewForm({ rating: 5, comment: '' });

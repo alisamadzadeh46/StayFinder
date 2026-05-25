@@ -1,9 +1,10 @@
 from rest_framework import serializers
 from .models import User
+import re
 
 
 class UserSerializer(serializers.ModelSerializer):
-    full_name = serializers.SerializerMethodField()
+    full_name     = serializers.SerializerMethodField()
     listing_count = serializers.SerializerMethodField()
 
     class Meta:
@@ -22,7 +23,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):
-    """Only editable profile fields — email/password handled separately."""
     class Meta:
         model  = User
         fields = ['first_name', 'last_name', 'username', 'bio', 'avatar', 'phone']
@@ -36,6 +36,10 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 class RegisterSerializer(serializers.ModelSerializer):
     password  = serializers.CharField(write_only=True, min_length=8)
     password2 = serializers.CharField(write_only=True)
+    # Make name fields optional
+    first_name = serializers.CharField(required=False, allow_blank=True, default='')
+    last_name  = serializers.CharField(required=False, allow_blank=True, default='')
+    username   = serializers.CharField(required=False, allow_blank=True, default='')
 
     class Meta:
         model  = User
@@ -46,8 +50,25 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'password': 'Passwords do not match.'})
         return data
 
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError('An account with this email already exists.')
+        return value
+
     def create(self, validated_data):
         validated_data.pop('password2')
+
+        # Auto-generate username from email if not provided
+        username = validated_data.get('username', '').strip()
+        if not username:
+            base = re.sub(r'[^a-zA-Z0-9]', '', validated_data['email'].split('@')[0])[:20] or 'user'
+            username = base
+            counter = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{base}{counter}"
+                counter += 1
+        validated_data['username'] = username
+
         return User.objects.create_user(**validated_data)
 
 

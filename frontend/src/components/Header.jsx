@@ -1,10 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { apiFetch } from '../utils/api';
 import { Icon } from './UI';
 
 export default function Header({ onAuthOpen, searchValue, onSearchChange }) {
   const { user, logout } = useAuth();
+  const [unread, setUnread] = useState(0);
+  useEffect(() => {
+    if (!user) { setUnread(0); return; }
+    const load = () => apiFetch('/messages/unread/').then(d => setUnread(d.unread || 0)).catch(() => {});
+    load();
+    const t = setInterval(load, 15000);
+    return () => clearInterval(t);
+  }, [user]);
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 

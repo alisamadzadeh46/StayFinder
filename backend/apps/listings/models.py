@@ -1,5 +1,14 @@
 from django.db import models
 from django.conf import settings
+from django.utils.text import slugify
+import re
+
+
+def generate_slug(title, city, pk=None):
+    base = slugify(f"{title}-{city}")
+    # Remove consecutive hyphens
+    base = re.sub(r'-+', '-', base).strip('-')
+    return f"{base}-{pk}" if pk else base
 
 
 class Listing(models.Model):
@@ -12,9 +21,14 @@ class Listing(models.Model):
 
     host = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='listings')
     title = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
     description = models.TextField()
     property_type = models.CharField(max_length=20, choices=PROPERTY_TYPES)
     price_per_night = models.DecimalField(max_digits=10, decimal_places=2)
+
+    # SEO
+    meta_title = models.CharField(max_length=70, blank=True, help_text='Custom SEO title (max 60 chars). Leave blank to auto-generate.')
+    meta_description = models.CharField(max_length=160, blank=True, help_text='Custom meta description (max 155 chars). Leave blank to auto-generate.')
 
     # Location
     address = models.CharField(max_length=300)
@@ -55,6 +69,38 @@ class Listing(models.Model):
 
     def __str__(self):
         return self.title
+
+    def save(self, *args, **kwargs):
+        # Auto-generate slug on first save
+        if not self.slug:
+            base_slug = generate_slug(self.title, self.city)
+            # Save first to get PK, then set slug
+            super().save(*args, **kwargs)
+            self.slug = generate_slug(self.title, self.city, self.pk)
+            kwargs['force_insert'] = False
+        super().save(*args, **kwargs)
+
+    def get_seo_title(self):
+        if self.meta_title:
+            return self.meta_title
+        pt = dict(self.PROPERTY_TYPES).get(self.property_type, self.property_type.title())
+        location = f"{self.city}, {self.country}"
+        return f"{pt} in {location} — {self.bedrooms}BR, {self.guests} guests | StayFinder"[:70]
+
+    def get_seo_description(self):
+        if self.meta_description:
+            return self.meta_description
+        amenities = []
+        if self.has_wifi:    amenities.append('WiFi')
+        if self.has_pool:    amenities.append('pool')
+        if self.has_kitchen: amenities.append('kitchen')
+        if self.has_parking: amenities.append('parking')
+        amenity_str = ', '.join(amenities[:3])
+        desc = self.description[:80].rstrip()
+        base = f"Book this {self.property_type.replace('_',' ')} in {self.city}. {desc}..."
+        if amenity_str:
+            base += f" Includes: {amenity_str}."
+        return base[:155]
 
     @property
     def average_rating(self):

@@ -10,10 +10,19 @@ const getHeaders = (extra = {}) => {
 };
 
 export const apiFetch = async (path, options = {}) => {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: getHeaders(options.headers),
-    ...options,
-  });
+  const url = `${BASE}${path}`;
+  console.debug('[API]', options.method || 'GET', url);
+  let res;
+  try {
+    res = await fetch(url, {
+      headers: getHeaders(options.headers),
+      ...options,
+    });
+  } catch (networkErr) {
+    console.error('[API] Network error on', url, networkErr.message);
+    throw { detail: `Cannot reach backend. Is it running? (${networkErr.message})` };
+  }
+  console.debug('[API] →', res.status, url);
 
   if (res.status === 401) {
     // Try refresh

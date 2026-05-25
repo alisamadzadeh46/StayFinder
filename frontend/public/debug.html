@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head><title>Debug</title></head>
+<body style="font-family:monospace;padding:20px;background:#111;color:#0f0">
+<h2 style="color:#fff">Full Debug Report</h2>
+<pre id="out">Running...</pre>
+<script>
+const log = [];
+const add = (msg, color='#0f0') => {
+  log.push(`<span style="color:${color}">${msg}</span>`);
+  document.getElementById('out').innerHTML = log.join('\n');
+};
+
+async function run() {
+  // Test 1: Basic fetch
+  add('=== TEST 1: /api/search/ ===');
+  try {
+    const r = await fetch('/api/search/');
+    const j = await r.json();
+    add(`Status: ${r.status}`);
+    add(`Count: ${j.count}`);
+    add(`Results length: ${j.results?.length}`);
+    if (j.results?.length > 0) {
+      const first = j.results[0];
+      add(`First listing: id=${first.id} slug=${JSON.stringify(first.slug)} title=${first.title?.slice(0,30)}`);
+      add(`Has images: ${first.images?.length} primary_image: ${first.primary_image?.slice(0,40)}`);
+    }
+  } catch(e) { add(`FAIL: ${e.message}`, '#f00'); }
+
+  // Test 2: Listing by slug
+  add('\n=== TEST 2: /api/listings/ ===');
+  try {
+    const r = await fetch('/api/listings/');
+    const j = await r.json();
+    add(`Status: ${r.status}`);
+    add(`Count: ${j.count}`);
+    if (j.results?.[0]) {
+      const s = j.results[0].slug;
+      add(`First slug: ${JSON.stringify(s)}`);
+      
+      // Test 3: detail by slug
+      add(`\n=== TEST 3: /api/listings/${s}/ ===`);
+      const r2 = await fetch(`/api/listings/${s}/`);
+      const j2 = await r2.json();
+      add(`Status: ${r2.status}`);
+      add(`Detail title: ${j2.title}`);
+    }
+  } catch(e) { add(`FAIL: ${e.message}`, '#f00'); }
+
+  // Test 4: React error check
+  add('\n=== TEST 4: Check React app ===');
+  const reactRoot = document.getElementById('root');
+  add(`React root exists (open localhost:3000): check browser console for errors`);
+  add('\nOpen DevTools > Console and paste:');
+  add('  fetch("/api/search/").then(r=>r.json()).then(d=>console.log(d.results[0]))', '#ff0');
+  
+  add('\n=== DONE ===', '#fff');
+}
+run();
+</script>
+</body>
+</html>

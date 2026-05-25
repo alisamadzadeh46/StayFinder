@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../utils/api';
+import { useSEO, PAGE_SEO } from '../hooks/useSEO';
 import { useAuth } from '../hooks/useAuth';
 import { Input, Btn, useToast } from '../components/UI';
 
@@ -24,6 +25,7 @@ const INITIAL = {
 export default function NewListingPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  useSEO(PAGE_SEO.newListing);
   const [form, setForm] = useState(INITIAL);
   const [imageUrl, setImageUrl] = useState('');
   const [errors, setErrors] = useState({});

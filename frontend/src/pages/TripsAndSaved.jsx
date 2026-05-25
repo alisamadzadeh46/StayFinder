@@ -1,3 +1,4 @@
+import { useSEO, PAGE_SEO } from '../hooks/useSEO';
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { apiFetch, formatPrice, formatDate } from '../utils/api';
@@ -8,6 +9,7 @@ import ListingCard from '../components/ListingCard';
 const STATUS_COLOR = { pending: 'amber', confirmed: 'green', cancelled: 'red', completed: 'blue' };
 
 export function TripsPage() {
+  useSEO(PAGE_SEO.trips);
   const { user } = useAuth();
   const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
@@ -92,6 +94,7 @@ export function TripsPage() {
 }
 
 export function SavedPage() {
+  useSEO(PAGE_SEO.saved);
   const { user } = useAuth();
   const navigate = useNavigate();
   const [listings, setListings] = useState([]);

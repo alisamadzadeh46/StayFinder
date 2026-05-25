@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { useSEO, PAGE_SEO } from '../hooks/useSEO';
 import { apiFetch } from '../utils/api';
 import ListingCard from '../components/ListingCard';
 import FilterBar from '../components/FilterBar';
@@ -13,6 +14,7 @@ const EMPTY_FILTERS = {
 
 export default function HomePage({ searchQuery }) {
   const { user } = useAuth();
+  useSEO(PAGE_SEO.home);
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState(EMPTY_FILTERS);

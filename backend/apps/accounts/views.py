@@ -19,6 +19,11 @@ def register(request):
     s = RegisterSerializer(data=request.data)
     s.is_valid(raise_exception=True)
     user = s.save()
+    try:
+        from apps.notifications.tasks import notify_welcome
+        notify_welcome.delay(user.id)
+    except Exception:
+        pass
     return Response(
         {'tokens': get_tokens(user), 'user': UserSerializer(user).data},
         status=201,

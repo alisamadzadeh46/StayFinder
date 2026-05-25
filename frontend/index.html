@@ -1,15 +1,36 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>StayFinder — Find Your Perfect Stay</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Primary SEO (updated dynamically per page by useSEO hook) -->
+  <title>StayFinder — Find your perfect stay</title>
+  <meta name="description" content="Discover unique homes, villas, cabins and apartments around the world. Book directly with hosts on StayFinder." />
+  <meta name="robots" content="index, follow" />
+
+  <!-- Open Graph defaults (updated per listing by useSEO) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="StayFinder" />
+  <meta property="og:title" content="StayFinder — Find your perfect stay" />
+  <meta property="og:description" content="Discover unique homes, villas, cabins and apartments around the world." />
+  <meta property="og:image" content="/og-default.jpg" />
+
+  <!-- Twitter Card defaults -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="StayFinder — Find your perfect stay" />
+  <meta name="twitter:description" content="Discover unique homes, villas, cabins and apartments around the world." />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <!-- Fonts (same as before) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
 </html>

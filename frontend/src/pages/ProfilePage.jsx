@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { apiFetch, formatPrice, formatDate } from '../utils/api';
+import { useSEO, PAGE_SEO } from '../hooks/useSEO';
 import { useAuth } from '../hooks/useAuth';
 import { Icon, Badge, StarRating, Spinner, useToast } from '../components/UI';
 
@@ -53,6 +54,7 @@ const inputStyle = {
 export default function ProfilePage() {
   const { user, updateUser } = useAuth();
   const navigate = useNavigate();
+  useSEO(PAGE_SEO.profile);
   const { show, ToastEl } = useToast();
 
   const [tab, setTab] = useState('profile');

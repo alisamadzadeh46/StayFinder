@@ -151,6 +151,7 @@ class ListingAdmin(admin.ModelAdmin):
     readonly_fields = [
         'map_widget', 'created_at', 'updated_at',
         'rating_readonly', 'review_count_readonly', 'primary_image_preview',
+        'slug',
     ]
     inlines    = [ListingImageInline]
     save_on_top = True
@@ -159,6 +160,13 @@ class ListingAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Basic Info', {
             'fields': ('host', 'title', 'description', 'property_type', 'is_active', 'primary_image_preview'),
+        }),
+        ('SEO', {
+            'fields': ('slug', 'meta_title', 'meta_description'),
+            'description': (
+                'Leave blank to auto-generate from title, city, and description. '
+                'meta_title max 60 chars. meta_description max 155 chars.'
+            ),
         }),
         ('Pricing & Capacity', {
             'fields': (
