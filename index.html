@@ -1,0 +1,751 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>StayFinder — A modern vacation rental platform</title>
+<meta name="description" content="Full-stack vacation rental platform. Django REST + React 18 + Elasticsearch + Celery + Docker. Production-grade Airbnb clone." />
+<meta property="og:title" content="StayFinder — Modern vacation rental platform" />
+<meta property="og:description" content="Django REST + React 18 + Vite. Listings, bookings, host dashboard, and interactive maps — all containerized." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          brand: {
+            50:"#fff0ed", 100:"#ffddd6", 200:"#ffb8a8", 300:"#ff8a73",
+            400:"#f5603d", 500:"#E8472A", 600:"#c73a1f", 700:"#a63018",
+            800:"#882714", 900:"#6b2010"
+          },
+          navy: { DEFAULT:"#1a1a2e", light:"#2d2d4a" },
+          gold: { DEFAULT:"#D4A853", light:"#f5e6c0" },
+          ink:  {
+            50:"#fafaf8", 100:"#f2f2f0", 200:"#e8e8e8", 300:"#d0d0d0",
+            400:"#888888", 500:"#666666", 600:"#444444", 700:"#333333",
+            800:"#222222", 900:"#1a1a1a"
+          }
+        },
+        fontFamily: {
+          sans:    ['"DM Sans"','system-ui','sans-serif'],
+          display: ['"Playfair Display"','Georgia','serif'],
+          mono:    ['"JetBrains Mono"','monospace'],
+        },
+        boxShadow: {
+          card: '0 1px 4px rgba(0,0,0,0.08)',
+          'card-hover': '0 8px 24px rgba(0,0,0,0.12)',
+          panel: '0 2px 16px rgba(0,0,0,0.10)',
+        }
+      }
+    }
+  }
+</script>
+
+<style>
+  html { scroll-behavior: smooth; }
+  body { font-family: 'DM Sans', system-ui, sans-serif; background: #fafaf8; }
+  .display { font-family: 'Playfair Display', serif; letter-spacing: -0.02em; }
+  .mono    { font-family: 'JetBrains Mono', monospace; }
+  .grad-text { background: linear-gradient(135deg,#c73a1f 0%,#E8472A 45%,#D4A853 100%); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .grad-bg   { background: radial-gradient(1100px 550px at 50% -80px, rgba(232,71,42,0.10), transparent 70%); }
+  .anchor    { scroll-margin-top: 72px; }
+  /* scrollbar */
+  ::-webkit-scrollbar { width:6px; }
+  ::-webkit-scrollbar-thumb { background:#d0d0d0; border-radius:3px; }
+
+  /* real app UI mockup styles */
+  .app-card { background:#fff; border-radius:14px; box-shadow:0 1px 4px rgba(0,0,0,0.08); overflow:hidden; }
+  .app-btn-primary { background:#E8472A; color:#fff; border-radius:10px; font-weight:600; padding:9px 18px; font-size:13px; border:none; cursor:pointer; }
+  .app-btn-outline { background:#fff; border:1.5px solid #e8e8e8; border-radius:10px; font-weight:500; padding:9px 18px; font-size:13px; cursor:pointer; }
+  .app-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:20px; font-size:11px; font-weight:600; }
+  .badge-confirmed { background:#d1fae5; color:#065f46; }
+  .badge-pending   { background:#fef3c7; color:#92400e; }
+  .badge-cancelled { background:#fee2e2; color:#991b1b; }
+  .badge-completed { background:#dbeafe; color:#1e40af; }
+  .status-dot { width:6px; height:6px; border-radius:50%; display:inline-block; }
+
+  /* star */
+  .star { color:#E8472A; font-size:11px; }
+</style>
+</head>
+
+<body class="text-ink-900 antialiased">
+
+<!-- ─────────────────────────── NAV ─────────────────────────── -->
+<header class="sticky top-0 z-40 border-b border-ink-200 bg-white/95 backdrop-blur">
+  <div class="mx-auto flex max-w-7xl items-center gap-6 px-4 py-3 sm:px-6">
+    <a href="#" class="flex items-center gap-2 shrink-0">
+      <!-- SVG matches actual app logo style -->
+      <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+        <circle cx="15" cy="15" r="15" fill="#E8472A"/>
+        <path d="M15 7C12.24 7 10 9.24 10 12c0 3.31 5 11 5 11s5-7.69 5-11c0-2.76-2.24-5-5-5zm0 6.5c-1.38 0-2.5-1.12-2.5-2.5S13.62 8.5 15 8.5s2.5 1.12 2.5 2.5S16.38 13.5 15 13.5z" fill="white"/>
+      </svg>
+      <span class="display text-xl font-bold text-brand-500">StayFinder</span>
+    </a>
+    <nav class="ml-4 hidden gap-1 text-sm md:flex">
+      <a href="#features"   class="rounded-lg px-3 py-1.5 text-ink-600 hover:bg-ink-100 font-medium">Features</a>
+      <a href="#listings"   class="rounded-lg px-3 py-1.5 text-ink-600 hover:bg-ink-100 font-medium">Listings</a>
+      <a href="#dashboard"  class="rounded-lg px-3 py-1.5 text-ink-600 hover:bg-ink-100 font-medium">Dashboard</a>
+      <a href="#security"   class="rounded-lg px-3 py-1.5 text-ink-600 hover:bg-ink-100 font-medium">Security</a>
+      <a href="#stack"      class="rounded-lg px-3 py-1.5 text-ink-600 hover:bg-ink-100 font-medium">Stack</a>
+      <a href="#start"      class="rounded-lg px-3 py-1.5 text-ink-600 hover:bg-ink-100 font-medium">Get started</a>
+    </nav>
+    <a href="https://github.com/alisamadzadeh46/StayFinder" target="_blank"
+       class="ml-auto inline-flex items-center gap-2 rounded-full border border-ink-200 bg-white px-3 py-1.5 text-xs font-semibold hover:bg-ink-50">
+      <svg viewBox="0 0 16 16" class="h-4 w-4" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+      Star on GitHub
+    </a>
+  </div>
+</header>
+
+<!-- ─────────────────────────── HERO ─────────────────────────── -->
+<section class="grad-bg relative">
+  <div class="mx-auto max-w-7xl px-4 pb-16 pt-14 sm:px-6 lg:pt-22">
+    <div class="grid gap-12 lg:grid-cols-[1.1fr_1fr] lg:items-center">
+      <div>
+        <span class="inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-500">
+          <span class="h-1.5 w-1.5 rounded-full bg-brand-500"></span> Open-source · MIT
+        </span>
+        <h1 class="display mt-4 text-5xl font-semibold leading-[1.05] text-ink-900 sm:text-6xl lg:text-7xl">
+          Find your perfect <span class="grad-text">stay, anywhere</span>.
+        </h1>
+        <p class="mt-5 max-w-xl text-base text-ink-500 sm:text-lg leading-relaxed">
+          A production-grade vacation rental platform: Django REST API, React 18 + Vite frontend,
+          Elasticsearch search, Celery workers, Leaflet maps, and everything containerized.
+          Built to be easy to read and easy to extend.
+        </p>
+        <div class="mt-7 flex flex-wrap items-center gap-3">
+          <a href="#start" class="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-brand-600">
+            Get started <span aria-hidden>→</span>
+          </a>
+          <a href="#listings" class="inline-flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-5 py-2.5 text-sm font-semibold text-ink-700 hover:bg-ink-50">
+            See the listings
+          </a>
+        </div>
+        <dl class="mt-8 grid max-w-md grid-cols-3 gap-4">
+          <div class="rounded-xl bg-white p-3 border border-ink-100">
+            <dt class="text-[11px] font-medium text-ink-400 uppercase tracking-wide">Backend</dt>
+            <dd class="mt-1 font-bold text-ink-900">Django 4.2</dd>
+          </div>
+          <div class="rounded-xl bg-white p-3 border border-ink-100">
+            <dt class="text-[11px] font-medium text-ink-400 uppercase tracking-wide">Frontend</dt>
+            <dd class="mt-1 font-bold text-ink-900">React 18</dd>
+          </div>
+          <div class="rounded-xl bg-white p-3 border border-ink-100">
+            <dt class="text-[11px] font-medium text-ink-400 uppercase tracking-wide">Search</dt>
+            <dd class="mt-1 font-bold text-ink-900">Elasticsearch</dd>
+          </div>
+        </dl>
+      </div>
+
+      <!-- Hero mockup: actual StayFinder UI -->
+      <div class="relative">
+        <div class="absolute -inset-4 -z-10 rounded-[28px] bg-gradient-to-br from-brand-100 via-orange-50 to-amber-50 blur-2xl opacity-60"></div>
+        <div class="rounded-2xl bg-white shadow-panel ring-1 ring-ink-200 overflow-hidden">
+          <!-- browser chrome -->
+          <div class="flex items-center gap-1.5 border-b border-ink-100 bg-ink-50 px-4 py-2">
+            <span class="h-2.5 w-2.5 rounded-full bg-rose-400"></span>
+            <span class="h-2.5 w-2.5 rounded-full bg-amber-400"></span>
+            <span class="h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
+            <span class="mx-auto mono text-[11px] text-ink-400">localhost:3000</span>
+          </div>
+
+          <!-- actual app header -->
+          <div class="flex items-center gap-3 border-b border-ink-200 bg-white px-4 py-2.5">
+            <div class="flex items-center gap-1.5 shrink-0">
+              <div class="h-5 w-5 rounded-full bg-brand-500 grid place-items-center">
+                <svg width="10" height="10" viewBox="0 0 30 30" fill="none"><path d="M15 7C12.24 7 10 9.24 10 12c0 3.31 5 11 5 11s5-7.69 5-11c0-2.76-2.24-5-5-5zm0 6.5c-1.38 0-2.5-1.12-2.5-2.5S13.62 8.5 15 8.5s2.5 1.12 2.5 2.5S16.38 13.5 15 13.5z" fill="white"/></svg>
+              </div>
+              <span class="display text-[13px] font-bold text-brand-500">StayFinder</span>
+            </div>
+            <!-- search bar matching actual UI: 40px radius, orange button -->
+            <div class="flex flex-1 items-center rounded-full border-[1.5px] border-ink-200 overflow-hidden mx-2">
+              <input class="flex-1 bg-transparent px-3 py-1 text-[10px] outline-none text-ink-600 pointer-events-none" value="Paris, France" readonly />
+              <button class="px-3 py-1.5 text-white flex items-center" style="background:#E8472A">
+                <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              </button>
+            </div>
+            <!-- user badge -->
+            <div class="h-7 w-7 shrink-0 rounded-full bg-brand-500 grid place-items-center text-[10px] font-bold text-white">A</div>
+          </div>
+
+          <!-- property type filter bar -->
+          <div class="flex items-center gap-2 border-b border-ink-100 bg-white px-4 py-2 overflow-hidden">
+            <span class="shrink-0 rounded-full bg-brand-500 px-2.5 py-1 text-[9px] font-semibold text-white">All</span>
+            <span class="shrink-0 rounded-full border border-ink-200 px-2.5 py-1 text-[9px] font-medium text-ink-600">Apartment</span>
+            <span class="shrink-0 rounded-full border border-ink-200 px-2.5 py-1 text-[9px] font-medium text-ink-600">Villa</span>
+            <span class="shrink-0 rounded-full border border-ink-200 px-2.5 py-1 text-[9px] font-medium text-ink-600">Beach</span>
+            <span class="shrink-0 rounded-full border border-ink-200 px-2.5 py-1 text-[9px] font-medium text-ink-600">Mountain</span>
+          </div>
+
+          <!-- listing cards grid — matching actual ListingCard component -->
+          <div class="grid grid-cols-3 gap-3 bg-ink-50 p-3">
+            <!-- Card 1 -->
+            <div class="app-card">
+              <div class="relative" style="aspect-ratio:4/3">
+                <div class="h-full bg-gradient-to-br from-orange-200 via-amber-100 to-rose-100"></div>
+                <!-- heart icon top-right, filled = saved (red) -->
+                <span class="absolute right-2 top-2 text-brand-500 drop-shadow text-xs">♥</span>
+                <!-- property type badge bottom-left -->
+                <span class="absolute bottom-1.5 left-1.5 rounded-md px-1.5 py-0.5 text-[8px] font-semibold text-white" style="background:rgba(0,0,0,0.45)">Apartment</span>
+              </div>
+              <div class="p-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-bold text-ink-900">Paris, France</span>
+                  <span class="star text-[10px]">★ 4.9</span>
+                </div>
+                <div class="mt-0.5 text-[9px] text-ink-400 truncate">Cozy flat near Eiffel Tower</div>
+                <div class="mt-0.5 text-[9px] text-ink-400">2 guests · 1 bed · 1 bath</div>
+                <div class="mt-1"><span class="text-[11px] font-bold text-ink-900">$120</span><span class="text-[9px] text-ink-400">/night</span></div>
+              </div>
+            </div>
+            <!-- Card 2 -->
+            <div class="app-card">
+              <div class="relative" style="aspect-ratio:4/3">
+                <div class="h-full bg-gradient-to-br from-emerald-200 via-teal-100 to-cyan-100"></div>
+                <span class="absolute right-2 top-2 text-ink-200 drop-shadow text-xs">♡</span>
+                <span class="absolute bottom-1.5 left-1.5 rounded-md px-1.5 py-0.5 text-[8px] font-semibold text-white" style="background:rgba(0,0,0,0.45)">Villa</span>
+              </div>
+              <div class="p-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-bold text-ink-900">Bali, Indonesia</span>
+                  <span class="star text-[10px]">★ 4.8</span>
+                </div>
+                <div class="mt-0.5 text-[9px] text-ink-400 truncate">Tropical villa with pool</div>
+                <div class="mt-0.5 text-[9px] text-ink-400">4 guests · 2 beds · 2 baths</div>
+                <div class="mt-1"><span class="text-[11px] font-bold text-ink-900">$85</span><span class="text-[9px] text-ink-400">/night</span></div>
+              </div>
+            </div>
+            <!-- Card 3 -->
+            <div class="app-card">
+              <div class="relative" style="aspect-ratio:4/3">
+                <div class="h-full bg-gradient-to-br from-blue-200 via-sky-100 to-indigo-100"></div>
+                <span class="absolute right-2 top-2 text-ink-200 drop-shadow text-xs">♡</span>
+                <span class="absolute bottom-1.5 left-1.5 rounded-md px-1.5 py-0.5 text-[8px] font-semibold text-white" style="background:rgba(0,0,0,0.45)">Beach house</span>
+              </div>
+              <div class="p-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-bold text-ink-900">Maldives</span>
+                  <span class="star text-[10px]">★ 5.0</span>
+                </div>
+                <div class="mt-0.5 text-[9px] text-ink-400 truncate">Overwater bungalow · Luxury</div>
+                <div class="mt-0.5 text-[9px] text-ink-400">2 guests · 1 bed · 1 bath</div>
+                <div class="mt-1"><span class="text-[11px] font-bold text-ink-900">$340</span><span class="text-[9px] text-ink-400">/night</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- pagination strip -->
+          <div class="flex items-center justify-center gap-3 bg-ink-50 border-t border-ink-100 py-2">
+            <button class="rounded-lg border border-ink-200 bg-white px-2.5 py-1 text-[9px] text-ink-400">‹ Prev</button>
+            <span class="text-[9px] text-ink-500">Page 1 of 4</span>
+            <button class="rounded-lg border border-ink-200 bg-white px-2.5 py-1 text-[9px] text-ink-700 font-medium">Next ›</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── FEATURE STRIP ─────────────────────────── -->
+<section id="features" class="anchor border-y border-ink-200 bg-white">
+  <div class="mx-auto grid max-w-7xl gap-6 px-4 py-10 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
+    <Feat title="Booking system"   desc="Date conflict validation, availability checks, and instant reservation with Celery email confirmation."></Feat>
+    <Feat title="Interactive map"  desc="Leaflet + OpenStreetMap with property pins, location picker, and map/list toggle."></Feat>
+    <Feat title="Guest–host chat"  desc="Real-time messaging with unread badges and per-conversation notifications."></Feat>
+    <Feat title="Async emails"     desc="Celery workers send booking confirmations, messages, and reminders in the background."></Feat>
+  </div>
+</section>
+<script>
+  customElements.define('feat-card', class extends HTMLElement {
+    connectedCallback() {
+      this.innerHTML = `<div>
+        <div class="font-bold text-base text-ink-900" style="font-family:'Playfair Display',serif">${this.getAttribute('title')}</div>
+        <p class="mt-1 text-sm text-ink-500 leading-relaxed">${this.getAttribute('desc')}</p>
+      </div>`;
+    }
+  });
+  document.querySelectorAll('Feat').forEach(el => {
+    const t = document.createElement('feat-card');
+    for (const a of el.attributes) t.setAttribute(a.name, a.value);
+    el.replaceWith(t);
+  });
+</script>
+
+<!-- ─────────────────────────── SECTION: LISTINGS ─────────────────────────── -->
+<section id="listings" class="anchor mx-auto max-w-7xl px-4 py-20 sm:px-6">
+  <div class="grid items-center gap-12 lg:grid-cols-2">
+    <div>
+      <span class="inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-500">Listings · public</span>
+      <h2 class="display mt-3 text-4xl font-semibold sm:text-5xl text-ink-900">A listing page guests actually love.</h2>
+      <p class="mt-3 text-ink-500 leading-relaxed">Full-text search with Elasticsearch, advanced filters by property type, location, price, amenities, and guest count. Interactive map view with Leaflet — switch between list and map layout at any time.</p>
+      <ul class="mt-6 grid gap-2.5 text-sm">
+        <li class="flex items-start gap-2.5"><span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500"></span><span>Image gallery with dot navigation — multiple photos per listing</span></li>
+        <li class="flex items-start gap-2.5"><span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500"></span><span>Date picker with conflict validation — no double bookings ever</span></li>
+        <li class="flex items-start gap-2.5"><span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500"></span><span>Wishlist — save any listing with one click, synced to profile</span></li>
+        <li class="flex items-start gap-2.5"><span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500"></span><span>Reviews with star ratings, guest avatars, and inline posting</span></li>
+      </ul>
+    </div>
+
+    <!-- Listing detail page mockup — actual UI -->
+    <div class="rounded-2xl bg-white shadow-panel ring-1 ring-ink-200 overflow-hidden">
+      <!-- image gallery: 1 big + 2x2 grid (actual layout) -->
+      <div class="grid grid-cols-[1.6fr_1fr] gap-1 p-3 pb-0" style="height:160px">
+        <div class="rounded-xl bg-gradient-to-br from-orange-200 via-amber-100 to-rose-100 relative overflow-hidden">
+          <div class="absolute bottom-2 left-0 right-0 flex justify-center gap-1">
+            <span class="h-1 w-4 rounded-full bg-white"></span>
+            <span class="h-1 w-2 rounded-full bg-white/40"></span>
+            <span class="h-1 w-2 rounded-full bg-white/40"></span>
+          </div>
+        </div>
+        <div class="grid grid-rows-2 gap-1">
+          <div class="rounded-xl bg-gradient-to-br from-rose-100 to-pink-100"></div>
+          <div class="rounded-xl bg-gradient-to-br from-amber-100 to-orange-100"></div>
+        </div>
+      </div>
+
+      <div class="p-3">
+        <!-- title & meta -->
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <div class="text-sm font-bold text-ink-900 display">Cozy apartment near Eiffel Tower</div>
+            <div class="mt-0.5 flex items-center gap-1 text-[10px] text-ink-400">
+              <span class="star">★★★★★</span> 4.9 · 87 reviews · Paris, France
+            </div>
+          </div>
+          <span class="shrink-0 text-brand-500 text-base">♥</span>
+        </div>
+
+        <!-- host + details -->
+        <div class="mt-2 flex items-center gap-2 border-t border-ink-100 pt-2">
+          <div class="h-8 w-8 rounded-full bg-brand-500 grid place-items-center text-[10px] font-bold text-white shrink-0">A</div>
+          <div class="text-[10px] text-ink-500">Apartment · hosted by <span class="font-semibold text-ink-700">Ali</span><br/>2 guests · 1 bedroom · 1 bed · 1 bath</div>
+          <div class="ml-auto text-right shrink-0">
+            <div class="text-sm font-bold text-ink-900">$120<span class="text-[9px] font-normal text-ink-400">/night</span></div>
+          </div>
+        </div>
+
+        <!-- booking panel (sticky right in actual app, shown inline here) -->
+        <div class="mt-2 rounded-xl border border-ink-200 p-2.5">
+          <div class="grid grid-cols-2 gap-1.5 mb-2">
+            <div class="rounded-lg border-2 border-brand-400 p-1.5">
+              <div class="text-[8px] font-semibold text-ink-400 uppercase">Check-in</div>
+              <div class="text-[10px] font-semibold">Jun 10, 2026</div>
+            </div>
+            <div class="rounded-lg border border-ink-200 p-1.5">
+              <div class="text-[8px] font-semibold text-ink-400 uppercase">Check-out</div>
+              <div class="text-[10px] font-semibold">Jun 15, 2026</div>
+            </div>
+          </div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[9px] text-ink-500">Guests</span>
+            <div class="flex items-center gap-1.5">
+              <button class="h-5 w-5 rounded-full border border-ink-200 grid place-items-center text-[10px] font-bold">−</button>
+              <span class="text-[10px] font-semibold">2</span>
+              <button class="h-5 w-5 rounded-full border border-ink-200 grid place-items-center text-[10px] font-bold text-brand-500">+</button>
+            </div>
+          </div>
+          <button class="w-full rounded-xl py-2 text-[11px] font-bold text-white" style="background:#E8472A">Reserve · $600 total</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── SECTION: HOST DASHBOARD ─────────────────────────── -->
+<section id="dashboard" class="anchor border-y border-ink-200 bg-white">
+  <div class="mx-auto grid max-w-7xl items-center gap-12 px-4 py-20 sm:px-6 lg:grid-cols-2">
+
+    <!-- Host Dashboard mockup — actual UI -->
+    <div class="order-2 lg:order-1">
+      <div class="rounded-2xl bg-ink-50 shadow-panel ring-1 ring-ink-200 overflow-hidden">
+        <!-- dashboard header -->
+        <div class="flex items-center justify-between border-b border-ink-200 bg-white px-4 py-3">
+          <div>
+            <div class="display text-base font-bold text-ink-900">Host Dashboard</div>
+            <div class="text-[10px] text-ink-400">Welcome back, Ali</div>
+          </div>
+          <button class="flex items-center gap-1 rounded-xl px-3 py-1.5 text-[10px] font-semibold text-white" style="background:#E8472A">
+            <span>+</span> Add listing
+          </button>
+        </div>
+
+        <!-- tabs — matching actual UI: border-bottom active tab in primary -->
+        <div class="flex gap-0 border-b border-ink-200 bg-white">
+          <button class="px-4 py-2 text-[11px] font-semibold border-b-2 border-brand-500 text-brand-500">Overview</button>
+          <button class="px-4 py-2 text-[11px] font-medium text-ink-400 border-b-2 border-transparent">Listings</button>
+          <button class="px-4 py-2 text-[11px] font-medium text-ink-400 border-b-2 border-transparent">
+            Bookings <span class="ml-1 rounded-full bg-amber-100 px-1.5 text-[8px] font-bold text-amber-700">2</span>
+          </button>
+        </div>
+
+        <div class="p-3">
+          <!-- stat cards — actual colors from code: primary, #7c3aed, #059669, #d97706, brand -->
+          <div class="grid grid-cols-5 gap-2 mb-3">
+            <StatCard icon="🏠" value="5" label="Listings" color="#E8472A"></StatCard>
+            <StatCard icon="📅" value="29" label="Bookings" color="#7c3aed"></StatCard>
+            <StatCard icon="💰" value="$4.2k" label="Revenue" color="#059669"></StatCard>
+            <StatCard icon="👥" value="143" label="Guests" color="#d97706"></StatCard>
+            <StatCard icon="⭐" value="4.8" label="Rating" color="#E8472A"></StatCard>
+          </div>
+
+          <!-- recent bookings — actual table layout -->
+          <div class="rounded-xl bg-white border border-ink-100 overflow-hidden">
+            <div class="border-b border-ink-100 bg-ink-50 px-3 py-1.5 text-[10px] font-semibold text-ink-600">Recent bookings</div>
+            <div class="divide-y divide-ink-50">
+              <!-- row: thumbnail, listing, guest, price, status, confirm btn -->
+              <div class="flex items-center gap-2 px-3 py-1.5">
+                <div class="h-9 w-12 shrink-0 rounded-lg bg-gradient-to-br from-orange-100 to-amber-100"></div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[9px] font-semibold text-ink-900 truncate">Eiffel Tower Apt</div>
+                  <div class="text-[8px] text-ink-400">Ali · Jun 10–15</div>
+                </div>
+                <span class="text-[9px] font-bold shrink-0">$600</span>
+                <span class="app-badge badge-confirmed shrink-0">confirmed</span>
+              </div>
+              <div class="flex items-center gap-2 px-3 py-1.5">
+                <div class="h-9 w-12 shrink-0 rounded-lg bg-gradient-to-br from-teal-100 to-emerald-100"></div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[9px] font-semibold text-ink-900 truncate">Bali Villa</div>
+                  <div class="text-[8px] text-ink-400">Sara · Jul 1–7</div>
+                </div>
+                <span class="text-[9px] font-bold shrink-0">$510</span>
+                <span class="app-badge badge-pending shrink-0">pending</span>
+              </div>
+              <div class="flex items-center gap-2 px-3 py-1.5">
+                <div class="h-9 w-12 shrink-0 rounded-lg bg-gradient-to-br from-blue-100 to-sky-100"></div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[9px] font-semibold text-ink-900 truncate">Maldives Bungalow</div>
+                  <div class="text-[8px] text-ink-400">John · Aug 5–9</div>
+                </div>
+                <span class="text-[9px] font-bold shrink-0">$1.36k</span>
+                <span class="app-badge badge-completed shrink-0">completed</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="order-1 lg:order-2">
+      <span class="inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-500">Host Dashboard · JWT-gated</span>
+      <h2 class="display mt-3 text-4xl font-semibold sm:text-5xl text-ink-900">Everything a host needs, in one place.</h2>
+      <p class="mt-3 text-ink-500 leading-relaxed">Manage properties, track bookings, respond to guests, and monitor earnings — all from a single authenticated dashboard backed by Django REST Framework.</p>
+      <ul class="mt-6 grid gap-2.5 text-sm">
+        <li class="flex items-start gap-2.5"><span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500"></span><span>Property CRUD with image uploads via Cloudinary or local storage</span></li>
+        <li class="flex items-start gap-2.5"><span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500"></span><span>Booking management — confirm, cancel, view guest details and dates</span></li>
+        <li class="flex items-start gap-2.5"><span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500"></span><span>Real-time messaging with unread badges per conversation</span></li>
+        <li class="flex items-start gap-2.5"><span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500"></span><span>Revenue analytics, guest count, and average rating overview</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+<script>
+  customElements.define('stat-card', class extends HTMLElement {
+    connectedCallback() {
+      const color = this.getAttribute('color');
+      const bg = color + '18';
+      this.innerHTML = `
+        <div class="rounded-xl bg-white border border-ink-100 p-2 text-center">
+          <div class="mx-auto mb-1 h-7 w-7 rounded-xl grid place-items-center text-sm" style="background:${bg}">${this.getAttribute('icon')}</div>
+          <div class="text-sm font-extrabold text-ink-900" style="font-family:'Playfair Display',serif">${this.getAttribute('value')}</div>
+          <div class="text-[8px] text-ink-400 font-medium">${this.getAttribute('label')}</div>
+        </div>`;
+    }
+  });
+  document.querySelectorAll('StatCard').forEach(el => {
+    const t = document.createElement('stat-card');
+    for (const a of el.attributes) t.setAttribute(a.name, a.value);
+    el.replaceWith(t);
+  });
+</script>
+
+<!-- ─────────────────────────── SECTION: SEARCH ─────────────────────────── -->
+<section id="search" class="anchor border-y border-ink-200 bg-gradient-to-b from-brand-50/30 to-white">
+  <div class="mx-auto max-w-7xl px-4 py-20 sm:px-6">
+    <div class="grid items-start gap-12 lg:grid-cols-[1fr_1.1fr]">
+      <div class="lg:sticky lg:top-24">
+        <span class="inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-500">Search · Elasticsearch</span>
+        <h2 class="display mt-3 text-4xl font-semibold sm:text-5xl text-ink-900">Find any stay with <span class="grad-text">full-text power</span>.</h2>
+        <p class="mt-3 text-ink-500 leading-relaxed">Elasticsearch full-text search with automatic Django ORM fallback when Elasticsearch is unavailable. Filter, sort, and discover instantly.</p>
+        <div class="mt-7 grid grid-cols-2 gap-3">
+          <div class="rounded-2xl border border-ink-100 bg-white p-4 shadow-card">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-ink-400">Search engine</div>
+            <div class="display mt-1 text-xl font-bold text-brand-500">Elasticsearch</div>
+            <div class="text-[10px] text-ink-400 mt-0.5">Full-text + filters</div>
+          </div>
+          <div class="rounded-2xl border border-ink-100 bg-white p-4 shadow-card">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-ink-400">Safe fallback</div>
+            <div class="display mt-1 text-xl font-bold text-emerald-600">Django ORM</div>
+            <div class="text-[10px] text-ink-400 mt-0.5">Always available</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-2.5">
+        <SearchFeat label="Full-text property search"  detail="Title, description, location — all indexed in Elasticsearch"></SearchFeat>
+        <SearchFeat label="Location-based filtering"   detail="Search by city, country, or address"></SearchFeat>
+        <SearchFeat label="Date availability filter"   detail="Only shows properties available for selected check-in / check-out dates"></SearchFeat>
+        <SearchFeat label="Price range filter"         detail="Min/max price per night with instant results"></SearchFeat>
+        <SearchFeat label="Property type filter"       detail="Apartment, villa, cabin, beach house, mountain retreat"></SearchFeat>
+        <SearchFeat label="Amenity filters"            detail="WiFi, pool, kitchen, parking, AC, gym, workspace, fireplace"></SearchFeat>
+        <SearchFeat label="Guest count filter"         detail="Adults and children with capacity validation per listing"></SearchFeat>
+        <SearchFeat label="Interactive map view"       detail="Leaflet + OpenStreetMap — list and map layout toggle"></SearchFeat>
+        <SearchFeat label="Sort: price, rating, date"  detail="Server-side sorting — no client-side juggling"></SearchFeat>
+        <SearchFeat label="Superhost filter"           detail="Show only verified Superhost properties"></SearchFeat>
+      </div>
+    </div>
+
+    <div class="mt-10 rounded-2xl bg-ink-900 p-5 ring-1 ring-white/10">
+      <div class="mb-3 text-xs font-semibold uppercase tracking-wider text-ink-400">Search API — with ORM fallback</div>
+      <pre class="mono overflow-auto text-[12px] leading-relaxed text-ink-100">GET <span class="text-emerald-300">/api/listings/?q=cozy+flat&city=Paris&min_price=50&max_price=200&check_in=2026-06-10&check_out=2026-06-15</span>
+
+{
+  <span class="text-emerald-300">"count"</span>: <span class="text-rose-300">24</span>,
+  <span class="text-emerald-300">"results"</span>: [{
+    <span class="text-emerald-300">"id"</span>: <span class="text-rose-300">42</span>,
+    <span class="text-emerald-300">"title"</span>:          <span class="text-amber-300">"Cozy apartment near Eiffel Tower"</span>,
+    <span class="text-emerald-300">"price_per_night"</span>: <span class="text-rose-300">120.00</span>,
+    <span class="text-emerald-300">"rating"</span>:          <span class="text-rose-300">4.9</span>,
+    <span class="text-emerald-300">"is_superhost"</span>:    <span class="text-blue-300">true</span>,
+    <span class="text-emerald-300">"location"</span>:        <span class="text-amber-300">"Paris, France"</span>
+  }]
+}</pre>
+    </div>
+  </div>
+</section>
+<script>
+  customElements.define('search-feat', class extends HTMLElement {
+    connectedCallback() {
+      this.innerHTML = `
+        <div class="flex items-start gap-3 rounded-xl border border-orange-100 bg-white p-3 transition hover:border-brand-300 shadow-card">
+          <span class="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-500">
+            <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+          <div>
+            <div class="text-sm font-semibold text-ink-900">${this.getAttribute('label')}</div>
+            <div class="text-xs text-ink-500">${this.getAttribute('detail')}</div>
+          </div>
+        </div>`;
+    }
+  });
+  document.querySelectorAll('SearchFeat').forEach(el => {
+    const t = document.createElement('search-feat');
+    for (const a of el.attributes) t.setAttribute(a.name, a.value);
+    el.replaceWith(t);
+  });
+</script>
+
+<!-- ─────────────────────────── SECTION: SECURITY ─────────────────────────── -->
+<section id="security" class="anchor border-y border-ink-200 bg-ink-50">
+  <div class="mx-auto max-w-7xl px-4 py-20 sm:px-6">
+    <div class="text-center">
+      <span class="inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-500">Security</span>
+      <h2 class="display mt-3 text-4xl font-semibold sm:text-5xl text-ink-900">Hardened in three layers.</h2>
+      <p class="mx-auto mt-3 max-w-xl text-ink-500">Defence in depth — API gateway, Django, and the framework all carry weight.</p>
+    </div>
+    <div class="mt-12 grid gap-4 lg:grid-cols-3">
+      <SecCard layer="API Gateway"    items="Rate limiting on all endpoints||JWT access (60 min) + refresh (14 days)||Refresh-token rotation + blacklist||HSTS + XSS protection headers||CORS_ALLOWED_ORIGINS allow-list||CSRF middleware + SameSite cookies"></SecCard>
+      <SecCard layer="Django + DRF"   items="SimpleJWT with automatic rotation||DRF throttles: auth 10/min · search 60/min||is_authenticated gating for host endpoints||Django ORM — zero raw SQL on request path||Input validation on all serializers||Pillow: strip EXIF, clamp image size"></SecCard>
+      <SecCard layer="Frontend + Infra" items="React escapes all output — no XSS||JWT auto-refreshed before expiry||Docker network isolation per service||Cloudinary signed uploads — no direct access||All secrets via environment variables||Celery tasks with retry + dead-letter"></SecCard>
+    </div>
+  </div>
+</section>
+<script>
+  customElements.define('sec-card', class extends HTMLElement {
+    connectedCallback() {
+      const items = (this.getAttribute('items') || '').split('||').filter(Boolean);
+      this.innerHTML = `
+        <div class="rounded-2xl bg-white p-5 ring-1 ring-ink-100 shadow-card">
+          <div class="mb-4 flex items-center gap-2">
+            <span class="grid h-9 w-9 place-items-center rounded-xl text-brand-500" style="background:#E8472A18">
+              <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </span>
+            <div class="font-bold text-base text-ink-900" style="font-family:'Playfair Display',serif">${this.getAttribute('layer')}</div>
+          </div>
+          <ul class="space-y-2 text-xs text-ink-600">
+            ${items.map(i=>`<li class="flex items-start gap-2"><span class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500"></span>${i}</li>`).join('')}
+          </ul>
+        </div>`;
+    }
+  });
+  document.querySelectorAll('SecCard').forEach(el => {
+    const t = document.createElement('sec-card');
+    for (const a of el.attributes) t.setAttribute(a.name, a.value);
+    el.replaceWith(t);
+  });
+</script>
+
+<!-- ─────────────────────────── SECTION: STACK ─────────────────────────── -->
+<section id="stack" class="anchor mx-auto max-w-7xl px-4 py-20 sm:px-6">
+  <div class="text-center">
+    <span class="inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-500">Stack</span>
+    <h2 class="display mt-3 text-4xl font-semibold sm:text-5xl text-ink-900">Boring, proven tech — choices you don't have to defend.</h2>
+    <p class="mx-auto mt-3 max-w-xl text-ink-500">Every piece is mainstream, well-documented, and battle-tested.</p>
+  </div>
+  <div class="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <Tech name="Django 4.2"       sub="Web framework"              color="emerald"></Tech>
+    <Tech name="Django REST"      sub="API layer"                  color="emerald"></Tech>
+    <Tech name="PostgreSQL 16"    sub="Primary database"           color="blue"></Tech>
+    <Tech name="Redis 7"          sub="Cache + Celery broker"      color="red"></Tech>
+    <Tech name="Elasticsearch"    sub="Full-text search + ORM fallback" color="amber"></Tech>
+    <Tech name="Celery + Beat"    sub="Async emails &amp; tasks"   color="green"></Tech>
+    <Tech name="React 18"         sub="UI library"                 color="sky"></Tech>
+    <Tech name="Vite"             sub="Frontend bundler"           color="purple"></Tech>
+    <Tech name="React Router 6"   sub="Client-side navigation"     color="red"></Tech>
+    <Tech name="Leaflet"          sub="Interactive maps"           color="green"></Tech>
+    <Tech name="SimpleJWT"        sub="Token authentication"       color="ink"></Tech>
+    <Tech name="Cloudinary"       sub="Image storage (optional)"   color="sky"></Tech>
+    <Tech name="Docker Compose"   sub="Dev + prod orchestration"   color="blue"></Tech>
+    <Tech name="date-fns"         sub="Date manipulation"          color="amber"></Tech>
+    <Tech name="OpenStreetMap"    sub="Free map tiles"             color="green"></Tech>
+  </div>
+</section>
+<script>
+  const rc = {
+    emerald:"#059669", blue:"#2563eb", red:"#dc2626", amber:"#d97706",
+    green:"#16a34a", ink:"#444", sky:"#0284c7", purple:"#7c3aed"
+  };
+  customElements.define('tech-card', class extends HTMLElement {
+    connectedCallback() {
+      const color = rc[this.getAttribute('color')] || rc.ink;
+      const bg = color + '14';
+      this.innerHTML = `
+        <div class="flex items-center gap-3 rounded-xl bg-white p-4 ring-1 ring-ink-100 shadow-card transition hover:-translate-y-0.5 hover:shadow-card-hover">
+          <span class="mono grid h-10 w-10 shrink-0 place-items-center rounded-xl text-xs font-bold ring-1" style="background:${bg};color:${color};ring-color:${bg}">${this.getAttribute('name').split(' ')[0].slice(0,2).toUpperCase()}</span>
+          <div>
+            <div class="text-sm font-semibold text-ink-900">${this.getAttribute('name')}</div>
+            <div class="text-xs text-ink-400">${this.getAttribute('sub')}</div>
+          </div>
+        </div>`;
+    }
+  });
+  document.querySelectorAll('Tech').forEach(el => {
+    const t = document.createElement('tech-card');
+    for (const a of el.attributes) t.setAttribute(a.name, a.value);
+    el.replaceWith(t);
+  });
+</script>
+
+<!-- ─────────────────────────── SECTION: ARCHITECTURE ─────────────────────────── -->
+<section class="border-y border-ink-200 bg-navy text-white">
+  <div class="mx-auto max-w-7xl px-4 py-20 sm:px-6">
+    <div class="text-center">
+      <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/90">Architecture</span>
+      <h2 class="display mt-3 text-4xl font-semibold sm:text-5xl">Six services, one <span class="grad-text">docker compose up</span>.</h2>
+    </div>
+    <div class="mt-12 grid items-start gap-8 lg:grid-cols-[1fr_1.1fr]">
+      <pre class="mono overflow-auto rounded-2xl p-5 text-[13px] leading-relaxed text-white ring-1 ring-white/10" style="background:#0f0f1a">$ docker compose up -d --build
+
+ <span class="text-emerald-400">✔</span> postgres       <span style="color:#888">healthy</span>
+ <span class="text-emerald-400">✔</span> redis          <span style="color:#888">healthy</span>
+ <span class="text-emerald-400">✔</span> backend        <span style="color:#888">8000/tcp  (DRF + JWT)</span>
+ <span class="text-emerald-400">✔</span> celery_worker  <span style="color:#888">running   (email tasks)</span>
+ <span class="text-emerald-400">✔</span> frontend       <span style="color:#888">3000/tcp  (React + Vite)</span>
+ <span class="text-emerald-400">✔</span> nginx          <span style="color:#888">→ :80</span>
+
+$ python manage.py migrate
+$ python manage.py createsuperuser
+<span style="color:#888">→ Open http://localhost:8000</span></pre>
+
+      <div class="rounded-2xl p-5 ring-1 ring-white/10" style="background:#0f0f1a">
+        <div class="mb-4 text-sm font-semibold">Request flow</div>
+        <div class="space-y-3 mono text-xs">
+          <div class="flex items-center gap-3">
+            <span class="grid h-7 w-14 place-items-center rounded-lg text-[10px]" style="background:rgba(255,255,255,0.08)">browser</span>
+            <span style="color:#555">→</span>
+            <span class="rounded-lg px-2 py-1" style="background:rgba(255,255,255,0.08)">nginx :80</span>
+          </div>
+          <div class="flex items-center gap-3 pl-16">
+            <span style="color:#555">↳ /</span>
+            <span class="rounded-lg px-2 py-1" style="background:rgba(232,71,42,0.2);color:#ff9d8a">frontend :3000 — React + Vite</span>
+          </div>
+          <div class="flex items-center gap-3 pl-16">
+            <span style="color:#555">↳ /api</span>
+            <span class="rounded-lg px-2 py-1" style="background:rgba(5,150,105,0.2);color:#6ee7b7">backend :8000 — DRF + JWT</span>
+          </div>
+          <div class="flex items-center gap-3 pl-16">
+            <span style="color:#555">↳ /media</span>
+            <span class="rounded-lg px-2 py-1" style="background:rgba(255,255,255,0.08);color:#ccc">disk / Cloudinary</span>
+          </div>
+          <div class="mt-4 pt-3 text-xs" style="border-top:1px solid rgba(255,255,255,0.1);color:#666">backend connects to:</div>
+          <div class="grid grid-cols-3 gap-2">
+            <span class="rounded-lg px-2 py-1.5 text-center text-xs" style="background:rgba(37,99,235,0.2);color:#93c5fd">postgres</span>
+            <span class="rounded-lg px-2 py-1.5 text-center text-xs" style="background:rgba(220,38,38,0.2);color:#fca5a5">redis</span>
+            <span class="rounded-lg px-2 py-1.5 text-center text-xs" style="background:rgba(217,119,6,0.2);color:#fcd34d">celery</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── SECTION: GET STARTED ─────────────────────────── -->
+<section id="start" class="anchor mx-auto max-w-7xl px-4 py-20 sm:px-6">
+  <div class="rounded-3xl px-6 py-12 sm:px-12 sm:py-16" style="background:linear-gradient(135deg,#fff0ed 0%,#ffffff 50%,#fef9f0 100%)">
+    <div class="grid items-center gap-10 lg:grid-cols-[1fr_1.1fr]">
+      <div>
+        <span class="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-brand-500 ring-1 ring-brand-100">Get started</span>
+        <h2 class="display mt-3 text-4xl font-semibold sm:text-5xl text-ink-900">Up and running in minutes.</h2>
+        <p class="mt-3 text-ink-600 leading-relaxed">Clone the repo, copy the env file, and run one command. The full platform —
+          Django backend, React frontend, PostgreSQL, Redis, and Celery worker — is ready out of the box.</p>
+        <div class="mt-6 flex flex-wrap gap-3">
+          <a href="https://github.com/alisamadzadeh46/StayFinder" target="_blank"
+             class="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-brand-600">
+            View on GitHub
+          </a>
+          <a href="#features" class="inline-flex items-center gap-2 rounded-xl border border-ink-200 bg-white px-5 py-2.5 text-sm font-semibold text-ink-700 hover:bg-ink-50">
+            Explore features
+          </a>
+        </div>
+      </div>
+      <pre class="mono overflow-auto rounded-2xl bg-navy p-5 text-[13px] leading-relaxed text-white"><span style="color:#666"># 1. Clone &amp; configure</span>
+git clone <span class="text-emerald-400">https://github.com/alisamadzadeh46/StayFinder.git</span>
+cd StayFinder
+cp .env.example .env
+
+<span style="color:#666"># 2. Boot the stack</span>
+docker compose up -d --build
+
+<span style="color:#666"># 3. Initialize</span>
+python manage.py migrate
+python manage.py createsuperuser
+
+<span style="color:#666"># Open http://localhost:8000</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── FOOTER ─────────────────────────── -->
+<footer class="border-t border-ink-200 bg-white">
+  <div class="mx-auto flex max-w-7xl flex-col items-start justify-between gap-4 px-4 py-10 sm:px-6 md:flex-row md:items-center">
+    <div class="flex items-center gap-3">
+      <div class="h-9 w-9 rounded-full bg-brand-500 grid place-items-center">
+        <svg width="18" height="18" viewBox="0 0 30 30" fill="none"><path d="M15 7C12.24 7 10 9.24 10 12c0 3.31 5 11 5 11s5-7.69 5-11c0-2.76-2.24-5-5-5zm0 6.5c-1.38 0-2.5-1.12-2.5-2.5S13.62 8.5 15 8.5s2.5 1.12 2.5 2.5S16.38 13.5 15 13.5z" fill="white"/></svg>
+      </div>
+      <div>
+        <div class="display text-lg font-bold text-brand-500">StayFinder</div>
+        <div class="text-xs text-ink-400">A production-grade vacation rental platform</div>
+      </div>
+    </div>
+    <nav class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-ink-500">
+      <a href="#features"  class="hover:text-brand-500 transition-colors">Features</a>
+      <a href="#listings"  class="hover:text-brand-500 transition-colors">Listings</a>
+      <a href="#dashboard" class="hover:text-brand-500 transition-colors">Dashboard</a>
+      <a href="#stack"     class="hover:text-brand-500 transition-colors">Stack</a>
+      <a href="#start"     class="hover:text-brand-500 transition-colors">Get started</a>
+      <a href="https://github.com/alisamadzadeh46/StayFinder" target="_blank" class="hover:text-brand-500 transition-colors">GitHub</a>
+    </nav>
+    <div class="text-xs text-ink-400">
+      © <script>document.write(new Date().getFullYear())</script> · MIT License
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
