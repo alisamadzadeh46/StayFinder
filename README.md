@@ -276,39 +276,6 @@ A production-grade full-stack Airbnb clone with a **Django REST API** backend an
 
 ---
 
-## 📸 Screenshots
-
-> Screenshots are located in the `backend/screenshots/` folder.
-
-### Home Page
-![Home](backend/screenshots/home.png)
-
-### Property Details
-![Property Details](backend/screenshots/property-details.png)
-
-### Host Booking List
-![Host Booking List](backend/screenshots/host-booking-list.png)
-
-### Host Listing List
-![Host Listing List](backend/screenshots/Host-listing-list.png)
-
-
-### Host Dashboard
-![Host Dashboard](backend/screenshots/host-dashboard.png)
-
-
-### My Trips
-![My Trips](backend/screenshots/my-trips.png)
-
-
-### Guest Profile
-![Guest Profile](backend/screenshots/guest-profile.png)
-
-
-
-### Host Profile
-![Host Profile](backend/screenshots/Host-profile.png)
-
 
 ## 🗂 Project Structure
 
